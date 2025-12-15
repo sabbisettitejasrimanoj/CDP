@@ -1,0 +1,456 @@
+<!-- templates/index.html - Place this in templates/ folder -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CropCare AI - Disease Detection</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        .logo {
+            font-size: 36px;
+            font-weight: bold;
+            background: linear-gradient(45deg, #00f260, #0575e6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #b0c4de;
+            font-size: 18px;
+        }
+
+        .upload-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 30px;
+            padding: 60px;
+            margin: 40px 0;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .upload-area {
+            border: 3px dashed rgba(0, 242, 96, 0.5);
+            border-radius: 20px;
+            padding: 60px;
+            margin: 40px 0;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #00f260;
+            background: rgba(0, 242, 96, 0.05);
+        }
+
+        .upload-area.dragover {
+            border-color: #00f260;
+            background: rgba(0, 242, 96, 0.1);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        #preview {
+            max-width: 400px;
+            max-height: 400px;
+            margin: 20px auto;
+            border-radius: 15px;
+            display: none;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .btn {
+            padding: 15px 40px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: linear-gradient(45deg, #00f260, #0575e6);
+            color: #fff;
+            margin: 10px;
+            box-shadow: 0 10px 30px rgba(0, 242, 96, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 242, 96, 0.5);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .results {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            margin: 40px 0;
+            display: none;
+            border: 1px solid rgba(0, 242, 96, 0.3);
+        }
+
+        .result-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .disease-name {
+            font-size: 36px;
+            color: #00f260;
+            margin-bottom: 10px;
+        }
+
+        .confidence {
+            font-size: 24px;
+            color: #b0c4de;
+        }
+
+        .severity {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .severity.high {
+            background: rgba(255, 59, 48, 0.3);
+            color: #ff3b30;
+        }
+
+        .severity.medium {
+            background: rgba(255, 149, 0, 0.3);
+            color: #ff9500;
+        }
+
+        .severity.low, .severity.none {
+            background: rgba(52, 199, 89, 0.3);
+            color: #34c759;
+        }
+
+        .info-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 15px;
+            border-left: 4px solid #00f260;
+        }
+
+        .info-section h3 {
+            color: #00f260;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .info-section p {
+            color: #b0c4de;
+            line-height: 1.8;
+        }
+
+        .loader {
+            border: 5px solid rgba(255, 255, 255, 0.1);
+            border-top: 5px solid #00f260;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: rgba(255, 59, 48, 0.2);
+            color: #ff3b30;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            display: none;
+            border: 1px solid rgba(255, 59, 48, 0.5);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .predictions-list {
+            margin-top: 20px;
+        }
+
+        .prediction-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            margin: 8px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">🌿 CropCare AI</div>
+            <p class="subtitle">AI-Powered Crop Disease Detection System</p>
+        </header>
+
+        <div class="upload-section">
+            <h2>Upload Crop Image</h2>
+            <p style="color: #b0c4de; margin-top: 10px;">Drop an image or click to browse</p>
+            
+            <div class="upload-area" id="dropArea">
+                <div class="upload-icon">📸</div>
+                <h3>Click or Drag to Upload</h3>
+                <p style="color: #b0c4de; margin-top: 10px;">Supports JPG, PNG, WEBP</p>
+                <input type="file" id="fileInput" accept="image/*">
+            </div>
+
+            <img id="preview" alt="Preview">
+            
+            <div class="loader" id="loader"></div>
+            <div class="error" id="error"></div>
+
+            <button class="btn" id="analyzeBtn" onclick="analyzeImage()" disabled>
+                Analyze Image
+            </button>
+            <button class="btn" id="resetBtn" onclick="reset()" style="display: none;">
+                Upload Another Image
+            </button>
+        </div>
+
+        <div class="results" id="results">
+            <div class="result-header">
+                <h2 class="disease-name" id="diseaseName"></h2>
+                <p class="confidence" id="confidence"></p>
+                <span class="severity" id="severity"></span>
+            </div>
+
+            <div class="info-section">
+                <h3>💊 Treatment Recommendation</h3>
+                <p id="treatment"></p>
+            </div>
+
+            <div class="info-section">
+                <h3>🛡️ Prevention Measures</h3>
+                <p id="prevention"></p>
+            </div>
+
+            <div class="info-section">
+                <h3>📊 All Predictions</h3>
+                <div class="predictions-list" id="predictionsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+
+        // Get elements
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('fileInput');
+        const preview = document.getElementById('preview');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const loader = document.getElementById('loader');
+        const error = document.getElementById('error');
+        const results = document.getElementById('results');
+
+        // Click to upload
+        dropArea.addEventListener('click', () => fileInput.click());
+
+        // File selection
+        fileInput.addEventListener('change', handleFileSelect);
+
+        // Drag and drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => {
+                dropArea.classList.add('dragover');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => {
+                dropArea.classList.remove('dragover');
+            }, false);
+        });
+
+        dropArea.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelect();
+            }
+        }
+
+        function handleFileSelect() {
+            const file = fileInput.files[0];
+            if (file) {
+                selectedFile = file;
+                
+                // Show preview
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+                
+                // Enable analyze button
+                analyzeBtn.disabled = false;
+                
+                // Hide previous results
+                results.style.display = 'none';
+                error.style.display = 'none';
+            }
+        }
+
+        async function analyzeImage() {
+            if (!selectedFile) {
+                showError('Please select an image first');
+                return;
+            }
+
+            // Show loader
+            loader.style.display = 'block';
+            analyzeBtn.disabled = true;
+            error.style.display = 'none';
+            results.style.display = 'none';
+
+            // Create form data
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            try {
+                // Send request to Flask backend
+                const response = await fetch('/api/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayResults(data);
+                    resetBtn.style.display = 'inline-block';
+                } else {
+                    showError(data.error || 'Analysis failed');
+                }
+            } catch (err) {
+                showError('Network error: ' + err.message);
+            } finally {
+                loader.style.display = 'none';
+                analyzeBtn.disabled = false;
+            }
+        }
+
+        function displayResults(data) {
+            // Display disease name
+            document.getElementById('diseaseName').textContent = data.disease;
+            
+            // Display confidence
+            document.getElementById('confidence').textContent = 
+                `Confidence: ${data.confidence}%`;
+            
+            // Display severity
+            const severityEl = document.getElementById('severity');
+            severityEl.textContent = `Severity: ${data.severity}`;
+            severityEl.className = 'severity ' + data.severity.toLowerCase();
+            
+            // Display treatment
+            document.getElementById('treatment').textContent = data.treatment;
+            
+            // Display prevention
+            document.getElementById('prevention').textContent = data.prevention;
+            
+            // Display all predictions
+            const predictionsList = document.getElementById('predictionsList');
+            predictionsList.innerHTML = '';
+            
+            const sortedPredictions = Object.entries(data.all_predictions)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+            
+            sortedPredictions.forEach(([disease, confidence]) => {
+                const item = document.createElement('div');
+                item.className = 'prediction-item';
+                item.innerHTML = `
+                    <span>${disease}</span>
+                    <span style="color: #00f260; font-weight: bold;">${confidence}%</span>
+                `;
+                predictionsList.appendChild(item);
+            });
+            
+            // Show results
+            results.style.display = 'block';
+            
+            // Scroll to results
+            results.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showError(message) {
+            error.textContent = '⚠️ ' + message;
+            error.style.display = 'block';
+        }
+
+        function reset() {
+            selectedFile = null;
+            fileInput.value = '';
+            preview.style.display = 'none';
+            results.style.display = 'none';
+            error.style.display = 'none';
+            analyzeBtn.disabled = true;
+            resetBtn.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
